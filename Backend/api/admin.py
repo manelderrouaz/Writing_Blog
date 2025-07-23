@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin 
 from .models import Author,Story,Tag,Comment,Library,LibraryStory,Like,Follower,Notification
 # Register your models here.
 admin.site.register(Author)

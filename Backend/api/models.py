@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils.text import slugify
 
 # -------------------------------
-# Custom User Model
+# Custom User Model 
 # -------------------------------
 class Author(AbstractUser):
     bio = models.TextField(blank=True)

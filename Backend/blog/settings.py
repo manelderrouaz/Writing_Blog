@@ -37,8 +37,34 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    #added 
+    'django.contrib.sites',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'dj_rest_auth', 
+    'dj_rest_auth.registration',
+    'allauth',                   # REQUIRED
+    'allauth.account',           # REQUIRED
+    'allauth.socialaccount',
+
     'api',
 ]
+
+
+AUTH_USER_MODEL = 'api.Author'
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+    'rest_framework.permissions.IsAuthenticated',
+    ],
+
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+    'rest_framework.authentication.SessionAuthentication',
+    'rest_framework.authentication.TokenAuthentication', 
+    ],
+}
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -48,9 +74,27 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
+# settings.py
+
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# if we want real email to be sent 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'derrouazmanel@gmail.com'
+EMAIL_HOST_PASSWORD = 'noew vzfu gozp yoas'
 ROOT_URLCONF = 'blog.urls'
+
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Login via email (not username)
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Enforce email verification
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True  # Auto-confirm email when user clicks link
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Auto-login user after verification
 
 TEMPLATES = [
     {
@@ -106,7 +150,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',  # Add this line
+        'rest_framework.authentication.TokenAuthentication',
     ],
 }
 # Internationalization
