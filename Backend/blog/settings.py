@@ -47,7 +47,11 @@ INSTALLED_APPS = [
     'allauth.account',           # REQUIRED
     'allauth.socialaccount',
 
+    #social providers 
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.facebook',
     'api',
+    'corsheaders'
 ]
 
 
@@ -64,9 +68,21 @@ REST_FRAMEWORK = {
     ],
 }
 
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': '271013826003-69mnl6d1ntv3p3hqt3vo0g4dhodm8ucn.apps.googleusercontent.com',
+            'secret': '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',
+            'key': ''
+        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+}
 SITE_ID = 1
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -78,7 +94,20 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
-# settings.py
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # React frontend
+    "http://127.0.0.1:8000", # Django backend
+]
+
+CSRF_COOKIE_SECURE = False  # True in production with HTTPS
+CSRF_COOKIE_HTTPONLY = False  # Must be False for JavaScript access
+CSRF_USE_SESSIONS = False
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'http://localhost:3000',  # If using frontend framework
+]
 
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # if we want real email to be sent 
@@ -100,6 +129,16 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
+
+# Standard Django login
+LOGIN_REDIRECT_URL = '/admin/'
+
+# django-allauth specific
+ACCOUNT_LOGOUT_REDIRECT_URL = '/admin/'
+ACCOUNT_SIGNUP_REDIRECT_URL = '/admin/'  # optional but helpful
+
+# Social accounts (Google, etc.)
+SOCIALACCOUNT_LOGIN_REDIRECT_URL = '/admin/'
 
 TEMPLATES = [
     {

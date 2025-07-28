@@ -27,11 +27,14 @@ urlpatterns = [
     path(
     'password-reset-confirm/<uidb64>/<token>/',
     auth_views.PasswordResetConfirmView.as_view(),
-    name='password_reset_confirm'
-),
+    name='password_reset_confirm'),
 
 
     path('api/rest_auth/registration/', include('dj_rest_auth.registration.urls')),
     path('accounts/', include('allauth.urls')), 
+    path('api/auth/social/', include('allauth.socialaccount.urls')),
+
 ]
+
+
 
