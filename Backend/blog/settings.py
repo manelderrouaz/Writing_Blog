@@ -27,7 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
+AUTH_USER_MODEL = 'api.Author'
 # Application definition
 
 INSTALLED_APPS = [
@@ -55,7 +55,7 @@ INSTALLED_APPS = [
 ]
 
 
-AUTH_USER_MODEL = 'api.Author'
+
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
