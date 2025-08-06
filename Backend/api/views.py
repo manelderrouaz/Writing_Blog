@@ -11,10 +11,10 @@ from rest_framework.generics import (
     RetrieveUpdateAPIView,
     DestroyAPIView
 )
-from .models import Story 
-from .serializer import StorySerializer
-from rest_framework.permissions import IsAuthenticated
-from .permissions import IsAuthorOrReadOnly
+from .models import Story,Tag 
+from .serializer import StorySerializer,TagSerializer
+from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
+from .permissions import IsAuthorOrReadOnly 
 
 
 # to create a story 
@@ -48,4 +48,25 @@ class StoryDeleteView(DestroyAPIView):
     permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
     lookup_field = 'pk'
 
+# TAg views 
+
+class TagListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+class TagRetrieveAPIView(generics.RetrieveAPIView):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+class TagUpdateAPIView(generics.UpdateAPIView):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+class TagDestroyAPIView(generics.DestroyAPIView):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
 

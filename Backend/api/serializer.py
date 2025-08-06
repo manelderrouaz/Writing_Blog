@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Author,Story   
+from .models import Author,Story,Tag 
 
 class AuthorSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -15,3 +15,8 @@ class StorySerializer(serializers.ModelSerializer):
         model = Story
         fields = '__all__' 
         read_only_fields = ['author'] 
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = '__all__'
