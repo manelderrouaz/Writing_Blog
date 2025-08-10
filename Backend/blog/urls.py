@@ -17,7 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from django.contrib.auth import views as auth_views
-
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView,
+) 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -31,7 +35,11 @@ urlpatterns = [
 
 
     path('api/rest_auth/registration/', include('dj_rest_auth.registration.urls')),
-    path('accounts/', include('allauth.urls')), 
+    #path('accounts/', include('allauth.urls')), 
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # Login
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # Refresh
+    path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),    # Verify if token is valid 
+
     path('api/auth/social/', include('allauth.socialaccount.urls')),
 
 ]

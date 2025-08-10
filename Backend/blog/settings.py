@@ -42,11 +42,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'dj_rest_auth', 
-    'dj_rest_auth.registration',
+    'dj_rest_auth.registration',    
     'allauth',                   # REQUIRED
     'allauth.account',           # REQUIRED
     'allauth.socialaccount',
 
+    'rest_framework_simplejwt',
     #social providers 
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.facebook',
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
 ]
 
 
+REST_USE_JWT = True
 
 
 REST_FRAMEWORK = {
@@ -64,8 +66,17 @@ REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': [
     'rest_framework.authentication.SessionAuthentication',
-    'rest_framework.authentication.TokenAuthentication', 
+    'rest_framework_simplejwt.authentication.JWTAuthentication',   
     ],
+}
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 SOCIALACCOUNT_PROVIDERS = {
@@ -100,6 +111,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000", # Django backend
 ]
 
+CSRF_COOKIE_AGE = 3600  # 1 hour expiration
 CSRF_COOKIE_SECURE = False  # True in production with HTTPS
 CSRF_COOKIE_HTTPONLY = False  # Must be False for JavaScript access
 CSRF_USE_SESSIONS = False
@@ -192,11 +204,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-    ],
-}
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 

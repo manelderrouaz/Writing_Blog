@@ -10,10 +10,11 @@ from .views import (
     TagRetrieveAPIView,
     TagUpdateAPIView,
     TagDestroyAPIView,
-
+    get_csrf_token
 )
 
 urlpatterns = [ 
+
     path('stories/', StoryListView.as_view(), name='story-list'),
     path('stories/create/', StoryCreateView.as_view(), name='story-create'),
     path('stories/<int:pk>/', StoryDetailView.as_view(), name='story-detail'),
@@ -24,4 +25,5 @@ urlpatterns = [
     path('tags/<int:pk>/', TagRetrieveAPIView.as_view(), name='tag-retrieve'),
     path('tags/<int:pk>/update/', TagUpdateAPIView.as_view(), name='tag-update'),
     path('tags/<int:pk>/delete/', TagDestroyAPIView.as_view(), name='tag-delete'),
+    path('csrf-token/', get_csrf_token, name='csrf-token'),  
 ]
