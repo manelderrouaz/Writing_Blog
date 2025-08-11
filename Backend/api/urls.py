@@ -1,4 +1,5 @@
-from django.urls import path 
+from django.urls import path, include 
+from rest_framework.routers import DefaultRouter
 from .views import (
     StoryCreateView,
     StoryListView,
@@ -10,8 +11,18 @@ from .views import (
     TagRetrieveAPIView,
     TagUpdateAPIView,
     TagDestroyAPIView,
-    get_csrf_token
+    get_csrf_token,
+    # Like
+    LikeListView,
+    LikeCreateView,
+    LikeDeleteView,
+    LikeCountView,
+    # Comment
+    CommentViewSet,
 )
+
+router = DefaultRouter()
+router.register(r'comments', CommentViewSet, basename='comment')
 
 urlpatterns = [ 
 
@@ -26,4 +37,13 @@ urlpatterns = [
     path('tags/<int:pk>/update/', TagUpdateAPIView.as_view(), name='tag-update'),
     path('tags/<int:pk>/delete/', TagDestroyAPIView.as_view(), name='tag-delete'),
     path('csrf-token/', get_csrf_token, name='csrf-token'),  
+
+    # Like endpoints
+    path('stories/<int:story_id>/likes/', LikeListView.as_view(), name='like-list'),
+    path('stories/<int:story_id>/likes/create/', LikeCreateView.as_view(), name='like-create'),
+    path('stories/<int:story_id>/likes/delete/', LikeDeleteView.as_view(), name='like-delete'),
+    path('stories/<int:story_id>/likes/count/', LikeCountView.as_view(), name='like-count'),
+
+    # Comment router
+    path('', include(router.urls)),
 ]
