@@ -19,6 +19,7 @@ from .views import (
     LikeCountView,
     # Comment
     CommentViewSet,
+    SessionToJWTView,
 )
 
 router = DefaultRouter()
@@ -46,4 +47,7 @@ urlpatterns = [
 
     # Comment router
     path('', include(router.urls)),
+
+    # Exchange session auth for JWT (after social login)
+    path('auth/session-to-jwt/', SessionToJWTView.as_view(), name='session-to-jwt'),
 ]

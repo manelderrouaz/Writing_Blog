@@ -1,3 +1,4 @@
+from crypt import methods
 from django.shortcuts import render
 from rest_framework import generics, permissions
 from rest_framework.response import Response  
@@ -13,8 +14,8 @@ from rest_framework.generics import (
     RetrieveUpdateAPIView,
     DestroyAPIView
 )
-from .models import Story,Tag, Like, Comment
-from .serializer import StorySerializer,TagSerializer, LikeSerializer, CommentSerializer
+from .models import Story,Tag, Like, Comment,Follower
+from .serializer import StorySerializer,TagSerializer, LikeSerializer, CommentSerializer, FollowerSerializer
 from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
 from .permissions import IsAuthorOrReadOnly 
 
@@ -29,7 +30,10 @@ from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import get_user_model
 
+from Backend.api import serializer 
 # Add this view function at the end of your views.py file
 @ensure_csrf_cookie
 @require_http_methods(["GET"])
@@ -145,7 +149,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        serializer.save(author=self.request.user)  
 
     @action(detail=False, methods=['get'], url_path='story/(?P<story_id>[^/.]+)', permission_classes=[permissions.AllowAny])
     def list_by_story(self, request, story_id=None):
@@ -176,3 +180,36 @@ class CommentViewSet(viewsets.ModelViewSet):
         )
         serializer = self.get_serializer(reply_comment)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+# Exchange authenticated session (e.g., after Google login) for JWT tokens
+@method_decorator(csrf_exempt, name='dispatch')
+class SessionToJWTView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = RefreshToken.for_user(request.user)
+        return Response({
+            'refresh': str(refresh_token),
+            'access': str(refresh_token.access_token),
+        })
+
+"""
+add a follow , Unfollow , get all followers , get all followings ,number of followers ,number of followings 
+"""
+
+class FollowerViewSet(viewsets.ModelViewSet):
+    queryset = Follower.objects.all()
+    serializer_class = FollowerSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    @action(details=False,methods=['POST'],url_path="user/(?P<user_id>[^/.])+/follow",permission_classes=["IsAuthenticated"]):
+    def follow(self,request,user_id=None):
+            User = get_user_model()
+            target_user = get_object_or_404(User,id=user_id) 
+            if request.user == target_user:
+                return Response({"detail":" you can not follow your self"},status=status.HTTP_400_BAD_REQUEST)
+            follower_relation,created = Follower.objects.get_or_create(follower=request.user,followed=target_user)
+            if not created:
+                return Response({"detail":"you are already following this user"},status=status.HTTP_400_BAD_REQUEST)
+            serializer = self.get_serializer(follower_relation)
+            return Response(serializer.data,status=status.HTTP_201_CREATED) 

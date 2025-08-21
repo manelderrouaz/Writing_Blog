@@ -29,13 +29,13 @@ urlpatterns = [
     path('api_auth/',include('rest_framework.urls') ),
     path('api/rest_auth/',include('dj_rest_auth.urls') ),
     path(
-    'password-reset-confirm/<uidb64>/<token>/',
+    'password-reset-confirm/<uidb64>/<token>/',  
     auth_views.PasswordResetConfirmView.as_view(),
     name='password_reset_confirm'),
 
 
     path('api/rest_auth/registration/', include('dj_rest_auth.registration.urls')),
-    #path('accounts/', include('allauth.urls')), 
+    path('accounts/', include('allauth.urls')), 
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # Login
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # Refresh
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),    # Verify if token is valid 

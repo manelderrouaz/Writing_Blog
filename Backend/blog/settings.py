@@ -28,9 +28,9 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 AUTH_USER_MODEL = 'api.Author'
-# Application definition
+# Application definition 
 
-INSTALLED_APPS = [
+INSTALLED_APPS = [ 
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -70,7 +70,7 @@ REST_FRAMEWORK = {
     ],
 }
 
-from datetime import timedelta
+from datetime import timedelta 
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
@@ -81,15 +81,15 @@ SIMPLE_JWT = {
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
-        'APP': {
-            'client_id': '271013826003-69mnl6d1ntv3p3hqt3vo0g4dhodm8ucn.apps.googleusercontent.com',
-            'secret': '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',
-            'key': ''
-        },
         'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'online'},
+        'AUTH_PARAMS': {
+            'access_type': 'offline',
+            'prompt': 'consent',
+            'include_granted_scopes': 'true',
+        },
     }
 }
+SOCIALACCOUNT_STORE_TOKENS = True
 SITE_ID = 1
 
 MIDDLEWARE = [
@@ -97,7 +97,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware', 
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -131,6 +131,7 @@ EMAIL_HOST_USER = 'derrouazmanel@gmail.com'
 EMAIL_HOST_PASSWORD = 'noew vzfu gozp yoas'
 ROOT_URLCONF = 'blog.urls'
 
+
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Login via email (not username)
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Enforce email verification
@@ -143,14 +144,14 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Standard Django login
-LOGIN_REDIRECT_URL = '/admin/'
+LOGIN_REDIRECT_URL = '/api/auth/session-to-jwt/'
 
 # django-allauth specific
 ACCOUNT_LOGOUT_REDIRECT_URL = '/admin/'
-ACCOUNT_SIGNUP_REDIRECT_URL = '/admin/'  # optional but helpful
+ACCOUNT_SIGNUP_REDIRECT_URL = '/api/auth/session-to-jwt/'  # optional but helpful
 
 # Social accounts (Google, etc.)
-SOCIALACCOUNT_LOGIN_REDIRECT_URL = '/admin/'
+SOCIALACCOUNT_LOGIN_REDIRECT_URL = '/api/auth/session-to-jwt/' 
 
 TEMPLATES = [
     {
