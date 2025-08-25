@@ -1,4 +1,4 @@
-from crypt import methods
+import select
 from django.shortcuts import render
 from rest_framework import generics, permissions
 from rest_framework.response import Response  
@@ -33,7 +33,6 @@ from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 
-from Backend.api import serializer 
 # Add this view function at the end of your views.py file
 @ensure_csrf_cookie
 @require_http_methods(["GET"])
@@ -202,7 +201,7 @@ class FollowerViewSet(viewsets.ModelViewSet):
     serializer_class = FollowerSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    @action(details=False,methods=['POST'],url_path="user/(?P<user_id>[^/.])+/follow",permission_classes=["IsAuthenticated"]):
+    @action(detail=False,methods=['post'],url_path="user/(?P<user_id>[^/.]+)/follow",permission_classes=[IsAuthenticated])
     def follow(self,request,user_id=None):
             User = get_user_model()
             target_user = get_object_or_404(User,id=user_id) 
@@ -213,3 +212,48 @@ class FollowerViewSet(viewsets.ModelViewSet):
                 return Response({"detail":"you are already following this user"},status=status.HTTP_400_BAD_REQUEST)
             serializer = self.get_serializer(follower_relation)
             return Response(serializer.data,status=status.HTTP_201_CREATED) 
+    
+    @action(detail=False,methods=["post","delete"],url_path="user/(?P<user_id>[^/.]+)/unfollow",permission_classes=[IsAuthenticated])
+    def unfollow(self,request,user_id=None):
+        User = get_user_model()
+        target_user = get_object_or_404(User,id=user_id)
+        if request.user == target_user :
+            return Response({"detail":"You can't unfollow yourself"},status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            relation = Follower.objects.get(follower=request.user,followed = target_user)
+        except:
+            return Response({"detail":"You are not following"}, status=status.HTTP_404_NOT_FOUND)
+        
+        relation.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @action(detail=False,methods=["get"],url_path="user/(?P<user_id>[^/.]+)/followers",permission_classes=[IsAuthenticated])
+    def list_followers(self,request,user_id=None):
+        queryset = Follower.objects.filter(followed_id = user_id).select_related('follower','followed') 
+        page = self.paginate_queryset(queryset)
+        if page is not None :
+            serializer = self.get_serializer(page,many = True)
+            return Response(serializer.data)
+        serializer = self.get_serializer(queryset,many = True)
+        return Response(serializer.data) 
+
+    @action(detail=False,methods=["get"],url_path="user/(?P<user_id>[^/.]+)/followings",permission_classes=[IsAuthenticated])
+    def list_followings(self,request,user_id=None):
+        queryset = Follower.objects.filter(follower_id = user_id).select_related('follower','followed') 
+        page = self.paginate_queryset(queryset)
+        if page is not None :
+            serializer = self.get_serializer(page,many = True)
+            return Response(serializer.data)
+        serializer = self.get_serializer(queryset,many = True)
+        return Response(serializer.data)
+
+    @action(detail=False,methods=["get"],url_path="user/(?P<user_id>[^/.]+)/followers/count",permission_classes=[IsAuthenticated])
+    def count_followers(self,request,user_id=None):
+        count = Follower.objects.filter(followed_id=user_id).count()
+        return Response({"User Id": int(user_id), "Number of followers": count})
+    
+    @action(detail=False,methods=["get"],url_path="user/(?P<user_id>[^/.]+)/followings/count",permission_classes=[IsAuthenticated])
+    def count_followings(self,request,user_id=None):
+        count = Follower.objects.filter(follower_id=user_id).count()
+        return Response({"User Id": int(user_id), "Number of followings": count})  

@@ -20,10 +20,13 @@ from .views import (
     # Comment
     CommentViewSet,
     SessionToJWTView,
+    # follower 
+    FollowerViewSet
 )
 
 router = DefaultRouter()
 router.register(r'comments', CommentViewSet, basename='comment')
+router.register(r'follower',FollowerViewSet, basename='follower')
 
 urlpatterns = [ 
 
@@ -46,7 +49,7 @@ urlpatterns = [
     path('stories/<int:story_id>/likes/count/', LikeCountView.as_view(), name='like-count'),
 
     # Comment router
-    path('', include(router.urls)),
+    path('', include(router.urls)), 
 
     # Exchange session auth for JWT (after social login)
     path('auth/session-to-jwt/', SessionToJWTView.as_view(), name='session-to-jwt'),
