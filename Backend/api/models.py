@@ -115,7 +115,7 @@ class Follower(models.Model):
 # Library (Custom Lists)
 # -------------------------------
 class Library(models.Model): 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='libraries')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='libraries') 
     name = models.CharField(max_length=100) 
     description = models.TextField(blank=True)
     is_private = models.BooleanField(default=True)
@@ -144,7 +144,7 @@ class Notification(models.Model):
         ('comment', 'Comment'),
         ('follow', 'Follow'),
         ('story', 'Story Published'),
-    ]
+    ] 
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_notifications') 

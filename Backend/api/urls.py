@@ -1,6 +1,7 @@
 from django.urls import path, include 
 from rest_framework.routers import DefaultRouter
 from .views import (
+    LibraryViewset,
     StoryCreateView,
     StoryListView,
     StoryDetailView,
@@ -21,12 +22,13 @@ from .views import (
     CommentViewSet,
     SessionToJWTView,
     # follower 
-    FollowerViewSet
+    FollowerViewSet,
 )
 
 router = DefaultRouter()
 router.register(r'comments', CommentViewSet, basename='comment')
-router.register(r'follower',FollowerViewSet, basename='follower')
+router.register(r'follower', FollowerViewSet, basename='follower')
+router.register(r'library', LibraryViewset, basename='library') 
 
 urlpatterns = [ 
 

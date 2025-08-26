@@ -14,10 +14,10 @@ from rest_framework.generics import (
     RetrieveUpdateAPIView,
     DestroyAPIView
 )
-from .models import Story,Tag, Like, Comment,Follower
-from .serializer import StorySerializer,TagSerializer, LikeSerializer, CommentSerializer, FollowerSerializer
+from .models import Author, Story,Tag, Like, Comment,Follower,Library
+from .serializer import StorySerializer,TagSerializer, LikeSerializer, CommentSerializer, FollowerSerializer,LibrarySerializer
 from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
-from .permissions import IsAuthorOrReadOnly 
+from .permissions import IsAuthorOrReadOnly, IsOwnerOrReadOnly 
 
 # Add these imports at the top of your views.py file (if not already there)
 from django.middleware.csrf import get_token
@@ -33,7 +33,8 @@ from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 
-# Add this view function at the end of your views.py file
+# from Backend.api import serializer Look it up 
+
 @ensure_csrf_cookie
 @require_http_methods(["GET"])
 def get_csrf_token(request):
@@ -148,7 +149,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)  
+        serializer.save(author=self.request.user) 
 
     @action(detail=False, methods=['get'], url_path='story/(?P<story_id>[^/.]+)', permission_classes=[permissions.AllowAny])
     def list_by_story(self, request, story_id=None):
@@ -176,8 +177,8 @@ class CommentViewSet(viewsets.ModelViewSet):
             author=request.user,
             content=content,
             parent=parent_comment,
-        )
-        serializer = self.get_serializer(reply_comment)
+        ) 
+        serializer = self.get_serializer(reply_comment) 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 # Exchange authenticated session (e.g., after Google login) for JWT tokens
@@ -198,7 +199,7 @@ add a follow , Unfollow , get all followers , get all followings ,number of foll
 
 class FollowerViewSet(viewsets.ModelViewSet):
     queryset = Follower.objects.all()
-    serializer_class = FollowerSerializer
+    serializer_class = FollowerSerializer 
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     @action(detail=False,methods=['post'],url_path="user/(?P<user_id>[^/.]+)/follow",permission_classes=[IsAuthenticated])
@@ -257,3 +258,15 @@ class FollowerViewSet(viewsets.ModelViewSet):
     def count_followings(self,request,user_id=None):
         count = Follower.objects.filter(follower_id=user_id).count()
         return Response({"User Id": int(user_id), "Number of followings": count})  
+
+""" create library ,update , get a user libraries if they are public ,make a lib public,delete lib """
+
+class LibraryViewset(viewsets.ModelViewSet):
+    queryset = Library.objects.all()    
+    serializer_class = LibrarySerializer
+    permission_classes=[IsAuthenticatedOrReadOnly,IsOwnerOrReadOnly]
+
+    def perform_create(self,serializer):
+        serializer.save(user=self.request.user)  
+
+

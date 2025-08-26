@@ -1,5 +1,8 @@
+from ast import Module
+from dataclasses import fields
+from nt import read
 from rest_framework import serializers
-from .models import Author,Story,Tag,Like, Comment,Follower 
+from .models import Author,Story,Tag,Like, Comment,Follower ,Library
 
 class AuthorSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -38,3 +41,10 @@ class FollowerSerializer(serializers.ModelSerializer):
         model = Follower
         fields = '__all__'
         read_only_fields = ['follower', 'followed', 'followed_at']
+
+class LibrarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Library
+        fields = '__all__'
+        read_only_fields = ['user','created_at']
+        
