@@ -1,4 +1,5 @@
 import select
+import stat
 from django.shortcuts import render
 from rest_framework import generics, permissions
 from rest_framework.response import Response  
@@ -14,8 +15,8 @@ from rest_framework.generics import (
     RetrieveUpdateAPIView,
     DestroyAPIView
 )
-from .models import Author, Story,Tag, Like, Comment,Follower,Library
-from .serializer import StorySerializer,TagSerializer, LikeSerializer, CommentSerializer, FollowerSerializer,LibrarySerializer
+from .models import Author, Story, Tag, Like, Comment, Follower, Library, LibraryStory
+from .serializer import LibraryStorySerializer, StorySerializer, TagSerializer, LikeSerializer, CommentSerializer, FollowerSerializer, LibrarySerializer
 from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
 from .permissions import IsAuthorOrReadOnly, IsOwnerOrReadOnly 
 
@@ -32,6 +33,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
+
 
 # from Backend.api import serializer Look it up 
 
@@ -259,7 +261,7 @@ class FollowerViewSet(viewsets.ModelViewSet):
         count = Follower.objects.filter(follower_id=user_id).count()
         return Response({"User Id": int(user_id), "Number of followings": count})  
 
-""" create library ,update , get a user libraries if they are public ,make a lib public,delete lib """
+""" create library ,update , get a user libraries if they are public ,make a lib public,delete lib """ 
 
 class LibraryViewset(viewsets.ModelViewSet):
     queryset = Library.objects.all()    
@@ -268,5 +270,55 @@ class LibraryViewset(viewsets.ModelViewSet):
 
     def perform_create(self,serializer):
         serializer.save(user=self.request.user)  
+    
+    @action(detail=False, methods=['get'], url_path ="user/(?P<user_id>[^/.]+)/libraries", permission_classes=[IsAuthenticated,IsOwnerOrReadOnly])
+    def user_libs(self,request, user_id=None):
+        logged_user = request.user
+        User = get_user_model()
+        target_user = get_object_or_404(User,id=user_id)
+        if logged_user == target_user:
+            queryset = Library.objects.filter(user=target_user)
+        else:
+            queryset = Library.objects.filter(user=target_user, is_private=False)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)   
+
+
+class LibraryStoryViewset(viewsets.ModelViewSet):
+    queryset = LibraryStory.objects.all()
+    serializer_class = LibraryStorySerializer
+    permission_classes = [IsAuthenticated]
+    @action(detail=False, methods=['post'], url_path='story/(?P<story_id>[^/.]+)/add-to-library')
+    def add_story_to_library(self, request, story_id=None):
+        library_id = request.data.get('library_id')
+        if not library_id:
+            return Response({'detail': 'library_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        target_library = get_object_or_404(Library, id=library_id, user=request.user)
+        saved_story = get_object_or_404(Story, id=story_id)
+
+        relation, created = LibraryStory.objects.get_or_create(library=target_library, story=saved_story)
+        if not created:
+            return Response({'detail': 'this post is already in library'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(relation)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['delete'], url_path='story/(?P<story_id>[^/.]+)/remove-from-library')
+    def remove_story_from_library(self, request, story_id=None):
+        library_id = request.data.get('library_id')
+        if not library_id:
+            return Response({'detail': 'library_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        target_library = get_object_or_404(Library, id=library_id, user=request.user)
+        saved_story = get_object_or_404(Story, id=story_id)
+        relation = get_object_or_404(LibraryStory, library=target_library, story=saved_story)
+        relation.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 

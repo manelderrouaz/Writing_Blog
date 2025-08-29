@@ -133,7 +133,7 @@ class LibraryStory(models.Model): # link the story to a library
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('library', 'story')
+        unique_together = ('library', 'story') 
 
 
 # Notification
@@ -145,7 +145,7 @@ class Notification(models.Model):
         ('follow', 'Follow'),
         ('story', 'Story Published'),
     ] 
-
+    
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_notifications') 
     notif_type = models.CharField(max_length=20, choices=NOTIF_TYPE_CHOICES)

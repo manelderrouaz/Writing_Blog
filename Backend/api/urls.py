@@ -23,12 +23,15 @@ from .views import (
     SessionToJWTView,
     # follower 
     FollowerViewSet,
+    # library-story 
+    LibraryStoryViewset
 )
 
 router = DefaultRouter()
 router.register(r'comments', CommentViewSet, basename='comment')
 router.register(r'follower', FollowerViewSet, basename='follower')
 router.register(r'library', LibraryViewset, basename='library') 
+router.register(r'library-story',LibraryStoryViewset, basename='library-story')
 
 urlpatterns = [ 
 

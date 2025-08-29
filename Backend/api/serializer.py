@@ -1,8 +1,9 @@
 from ast import Module
 from dataclasses import fields
 from nt import read
+from pyexpat import model
 from rest_framework import serializers
-from .models import Author,Story,Tag,Like, Comment,Follower ,Library
+from .models import Author,Story,Tag,Like, Comment,Follower ,Library,LibraryStory
 
 class AuthorSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -47,4 +48,9 @@ class LibrarySerializer(serializers.ModelSerializer):
         model = Library
         fields = '__all__'
         read_only_fields = ['user','created_at']
-        
+
+class LibraryStorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model=LibraryStory
+        fields= "__all__"
+        read_only_fields = ['added_at']
