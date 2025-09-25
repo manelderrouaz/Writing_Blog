@@ -3,7 +3,7 @@ from dataclasses import fields
 from nt import read
 from pyexpat import model
 from rest_framework import serializers
-from .models import Author,Story,Tag,Like, Comment,Follower ,Library,LibraryStory
+from .models import Author,Story,Tag,Like, Comment,Follower ,Library,LibraryStory, Notification
 
 class AuthorSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -54,3 +54,9 @@ class LibraryStorySerializer(serializers.ModelSerializer):
         model=LibraryStory
         fields= "__all__"
         read_only_fields = ['added_at']
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+        read_only_fields = ['recipient', 'sender', 'created_at']

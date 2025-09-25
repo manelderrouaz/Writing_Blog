@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     #added 
     'django.contrib.sites',
     'rest_framework',
+    'drf_yasg',
     'rest_framework.authtoken',
     'dj_rest_auth', 
     'dj_rest_auth.registration',    
@@ -179,7 +180,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'blog_bd',
         'USER': 'postgres',
-        'PASSWORD': '123456789',
+        'PASSWORD': 'password',
         'HOST': 'localhost',
         'PORT': '5432',  # default
     }

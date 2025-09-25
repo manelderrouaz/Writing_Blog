@@ -1,3 +1,4 @@
+#from crypt import methods
 import select
 import stat
 from django.shortcuts import render
@@ -9,14 +10,12 @@ from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.generics import (
-    CreateAPIView,
     ListAPIView,
-    RetrieveAPIView,
-    RetrieveUpdateAPIView,
+    CreateAPIView,
     DestroyAPIView
 )
-from .models import Author, Story, Tag, Like, Comment, Follower, Library, LibraryStory
-from .serializer import LibraryStorySerializer, StorySerializer, TagSerializer, LikeSerializer, CommentSerializer, FollowerSerializer, LibrarySerializer
+from .models import Author, Story, Tag, Like, Comment, Follower, Library, LibraryStory,Notification
+from .serializer import LibraryStorySerializer, StorySerializer, TagSerializer, LikeSerializer, CommentSerializer, FollowerSerializer, LibrarySerializer, NotificationSerializer
 from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
 from .permissions import IsAuthorOrReadOnly, IsOwnerOrReadOnly 
 
@@ -47,65 +46,17 @@ def get_csrf_token(request):
     return JsonResponse({'csrftoken': token})
 
 
-# to create a story 
-@method_decorator(csrf_exempt, name='dispatch')
-class StoryCreateView(CreateAPIView):
+class StoryViewSet(viewsets.ModelViewSet):
     queryset = Story.objects.all()
     serializer_class = StorySerializer
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user) # logged in user is set as author 
-
-# to list all stories  
-@method_decorator(csrf_exempt, name='dispatch')
-class StoryListView(ListAPIView):
-    queryset = Story.objects.all()
-    serializer_class = StorySerializer
-    permission_classes = [permissions.AllowAny]
-# retrieve a story by ID
-@method_decorator(csrf_exempt, name='dispatch')
-class StoryDetailView(RetrieveAPIView):
-    queryset = Story.objects.all()
-    serializer_class = StorySerializer
-    lookup_field = 'pk' 
-
-# retrieve and update a story 
-@method_decorator(csrf_exempt, name='dispatch')
-class StoryUpdateView(RetrieveUpdateAPIView):
-    queryset = Story.objects.all()
-    serializer_class = StorySerializer 
-    permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
-    lookup_field = 'pk' 
-
-@method_decorator(csrf_exempt, name='dispatch')
-class StoryDeleteView(DestroyAPIView):
-    queryset = Story.objects.all()
-    serializer_class = StorySerializer
-    permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
-    lookup_field = 'pk'
+        serializer.save(author=self.request.user)
 
 # Tag views 
 
-@method_decorator(csrf_exempt, name='dispatch')
-class TagListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-@method_decorator(csrf_exempt, name='dispatch')
-class TagRetrieveAPIView(generics.RetrieveAPIView):
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-@method_decorator(csrf_exempt, name='dispatch')
-class TagUpdateAPIView(generics.UpdateAPIView):
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-@method_decorator(csrf_exempt, name='dispatch')
-class TagDestroyAPIView(generics.DestroyAPIView):
+class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -119,30 +70,49 @@ class LikeListView(ListAPIView):
         story_id = self.kwargs.get('story_id')
         return Like.objects.filter(story_id=story_id)
 
-class LikeCreateView(CreateAPIView):
+class LikeViewSet(viewsets.ModelViewSet):
+    queryset = Like.objects.all()
     serializer_class = LikeSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ['list_by_story', 'count_by_story']:
+            return [permissions.AllowAny()]
+        return super().get_permissions()
 
     def perform_create(self, serializer):
-        story_id = self.kwargs.get('story_id')
+        # For direct POST /likes/ with body { story: id }
+        serializer.save(user=self.request.user) 
+
+    @action(detail=False, methods=['get'], url_path='story/(?P<story_id>[^/.]+)')
+    def list_by_story(self, request, story_id=None):
+        queryset = Like.objects.filter(story_id=story_id)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='story/(?P<story_id>[^/.]+)/create')
+    def like_story(self, request, story_id=None):
         story = get_object_or_404(Story, id=story_id)
-        serializer.save(user=self.request.user, story=story)
+        like, created = Like.objects.get_or_create(user=request.user, story=story)
+        if not created:
+            return Response({'detail': 'Already liked'}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(like)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-class LikeDeleteView(DestroyAPIView):
-    serializer_class = LikeSerializer
-    permission_classes = [IsAuthenticated]
+    @action(detail=False, methods=['delete'], url_path='story/(?P<story_id>[^/.]+)/delete')
+    def unlike_story(self, request, story_id=None):
+        like = get_object_or_404(Like, story_id=story_id, user=request.user)
+        like.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def get_object(self):
-        story_id = self.kwargs.get('story_id')
-        user = self.request.user
-        return get_object_or_404(Like, story_id=story_id, user=user)
-
-class LikeCountView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request, story_id):
+    @action(detail=False, methods=['get'], url_path='story/(?P<story_id>[^/.]+)/count')
+    def count_by_story(self, request, story_id=None):
         count = Like.objects.filter(story_id=story_id).count()
-        return Response({'story_id': story_id, 'like_count': count})
+        return Response({'story_id': int(story_id), 'like_count': count})
 
 # Comment ViewSet
 class CommentViewSet(viewsets.ModelViewSet):
@@ -320,5 +290,60 @@ class LibraryStoryViewset(viewsets.ModelViewSet):
         relation = get_object_or_404(LibraryStory, library=target_library, story=saved_story)
         relation.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
 
+    @action(detail=False,methods=['get'],url_path='library/(?P<lib_id>[^/.]+)/get-all-stories')
+    def get_all_stories(self,request,lib_id=None):
+        try:
+            library = get_object_or_404(Library, id=lib_id)
+
+            if library.is_privite and library.user != request.user :
+                return Response({"detail":"you don't have the permission to access this library"},status=status.HTTP_403_FORBIDDEN)
+            
+            library_stories = LibraryStory.objects.filter(library=library).select_related('story','story__author')
+
+            stories = [lib_story.story for lib_story in library_stories]
+
+            serialiser = StorySerializer(stories, many=True)
+
+            page = self.paginate_queryset(stories)
+
+            if page is not None :
+                serialiser = StorySerializer(page, many =True)
+                return self.paginated_response(serialiser.data)
+            
+            return Response(serialiser.data)
+
+        except ValueError:
+            return Response({"detail":"Invalide libraru ID"},status=status.HTTP_200_successful) 
+
+
+"""each time a new notification type is added a new notification row will be added to Notification, return all notifation filtred by authenticated user
+if notification is not read """
+class NotificationViewSet(viewsets.ModelViewSet):
+    queryset = Notification.objects.all().select_related('recipient','sender','story','comment')
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset().filter(recipient=self.request.user)
+        notif_type = self.request.query_params.get('type')
+        is_read = self.request.query_params.get('is_read')
+        if notif_type:
+            queryset = queryset.filter(notif_type=notif_type)
+        if is_read is not None:
+            if is_read.lower() in ['true','1','yes']:
+                queryset = queryset.filter(is_read=True)
+            elif is_read.lower() in ['false','0','no']:
+                queryset = queryset.filter(is_read=False)
+        return queryset.order_by('-created_at')
+
+    def perform_create(self, serializer):
+        # Creation is handled by signals; disallow manual creation via API
+        return Response({'detail': 'Creation is handled automatically'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    @action(detail=False, methods=['post'])
+    def mark_all_read(self, request):
+        updated = self.get_queryset().update(is_read=True)
+        return Response({'updated': updated})
 
