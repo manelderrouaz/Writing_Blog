@@ -41,7 +41,11 @@ class FollowerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follower
         fields = '__all__'
-        read_only_fields = ['follower', 'followed', 'followed_at']
+        read_only_fields = ['follower', 'followed_at']  
+    def create(self, validated_data):
+        validated_data['follower'] = self.context['request'].user
+        return super().create(validated_data)
+
 
 class LibrarySerializer(serializers.ModelSerializer):
     class Meta:

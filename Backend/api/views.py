@@ -16,7 +16,7 @@ from rest_framework.generics import (
 )
 from .models import Author, Story, Tag, Like, Comment, Follower, Library, LibraryStory,Notification
 from .serializer import LibraryStorySerializer, StorySerializer, TagSerializer, LikeSerializer, CommentSerializer, FollowerSerializer, LibrarySerializer, NotificationSerializer
-from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly,IsAdminUser 
 from .permissions import IsAuthorOrReadOnly, IsOwnerOrReadOnly 
 
 # Add these imports at the top of your views.py file (if not already there)
@@ -59,16 +59,9 @@ class StoryViewSet(viewsets.ModelViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminUser]
 
 # Like Views
-class LikeListView(ListAPIView):
-    serializer_class = LikeSerializer
-    permission_classes = [permissions.AllowAny]
-
-    def get_queryset(self):
-        story_id = self.kwargs.get('story_id')
-        return Like.objects.filter(story_id=story_id)
 
 class LikeViewSet(viewsets.ModelViewSet):
     queryset = Like.objects.all()
@@ -93,21 +86,6 @@ class LikeViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-    @action(detail=False, methods=['post'], url_path='story/(?P<story_id>[^/.]+)/create')
-    def like_story(self, request, story_id=None):
-        story = get_object_or_404(Story, id=story_id)
-        like, created = Like.objects.get_or_create(user=request.user, story=story)
-        if not created:
-            return Response({'detail': 'Already liked'}, status=status.HTTP_400_BAD_REQUEST)
-        serializer = self.get_serializer(like)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    @action(detail=False, methods=['delete'], url_path='story/(?P<story_id>[^/.]+)/delete')
-    def unlike_story(self, request, story_id=None):
-        like = get_object_or_404(Like, story_id=story_id, user=request.user)
-        like.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'], url_path='story/(?P<story_id>[^/.]+)/count')
     def count_by_story(self, request, story_id=None):
@@ -155,7 +133,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 # Exchange authenticated session (e.g., after Google login) for JWT tokens
 @method_decorator(csrf_exempt, name='dispatch')
-class SessionToJWTView(APIView):
+class SessionToJWTView(APIView): 
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -174,32 +152,6 @@ class FollowerViewSet(viewsets.ModelViewSet):
     serializer_class = FollowerSerializer 
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    @action(detail=False,methods=['post'],url_path="user/(?P<user_id>[^/.]+)/follow",permission_classes=[IsAuthenticated])
-    def follow(self,request,user_id=None):
-            User = get_user_model()
-            target_user = get_object_or_404(User,id=user_id) 
-            if request.user == target_user:
-                return Response({"detail":" you can not follow your self"},status=status.HTTP_400_BAD_REQUEST)
-            follower_relation,created = Follower.objects.get_or_create(follower=request.user,followed=target_user)
-            if not created:
-                return Response({"detail":"you are already following this user"},status=status.HTTP_400_BAD_REQUEST)
-            serializer = self.get_serializer(follower_relation)
-            return Response(serializer.data,status=status.HTTP_201_CREATED) 
-    
-    @action(detail=False,methods=["post","delete"],url_path="user/(?P<user_id>[^/.]+)/unfollow",permission_classes=[IsAuthenticated])
-    def unfollow(self,request,user_id=None):
-        User = get_user_model()
-        target_user = get_object_or_404(User,id=user_id)
-        if request.user == target_user :
-            return Response({"detail":"You can't unfollow yourself"},status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            relation = Follower.objects.get(follower=request.user,followed = target_user)
-        except:
-            return Response({"detail":"You are not following"}, status=status.HTTP_404_NOT_FOUND)
-        
-        relation.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
     
     @action(detail=False,methods=["get"],url_path="user/(?P<user_id>[^/.]+)/followers",permission_classes=[IsAuthenticated])
     def list_followers(self,request,user_id=None):
@@ -263,41 +215,14 @@ class LibraryStoryViewset(viewsets.ModelViewSet):
     queryset = LibraryStory.objects.all()
     serializer_class = LibraryStorySerializer
     permission_classes = [IsAuthenticated]
-    @action(detail=False, methods=['post'], url_path='story/(?P<story_id>[^/.]+)/add-to-library')
-    def add_story_to_library(self, request, story_id=None):
-        library_id = request.data.get('library_id')
-        if not library_id:
-            return Response({'detail': 'library_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        target_library = get_object_or_404(Library, id=library_id, user=request.user)
-        saved_story = get_object_or_404(Story, id=story_id)
-
-        relation, created = LibraryStory.objects.get_or_create(library=target_library, story=saved_story)
-        if not created:
-            return Response({'detail': 'this post is already in library'}, status=status.HTTP_400_BAD_REQUEST)
-
-        serializer = self.get_serializer(relation)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    @action(detail=False, methods=['delete'], url_path='story/(?P<story_id>[^/.]+)/remove-from-library')
-    def remove_story_from_library(self, request, story_id=None):
-        library_id = request.data.get('library_id')
-        if not library_id:
-            return Response({'detail': 'library_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        target_library = get_object_or_404(Library, id=library_id, user=request.user)
-        saved_story = get_object_or_404(Story, id=story_id)
-        relation = get_object_or_404(LibraryStory, library=target_library, story=saved_story)
-        relation.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-    
 
     @action(detail=False,methods=['get'],url_path='library/(?P<lib_id>[^/.]+)/get-all-stories')
     def get_all_stories(self,request,lib_id=None):
         try:
             library = get_object_or_404(Library, id=lib_id)
 
-            if library.is_privite and library.user != request.user :
+            if library.is_private and library.user != request.user :
                 return Response({"detail":"you don't have the permission to access this library"},status=status.HTTP_403_FORBIDDEN)
             
             library_stories = LibraryStory.objects.filter(library=library).select_related('story','story__author')
